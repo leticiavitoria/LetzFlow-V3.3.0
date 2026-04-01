@@ -1,12 +1,11 @@
 // ============================================
-// DOTTI SENDER FULL - PANEL v3.1.1
-// Copyright (c) DottiFlow - Todos os direitos reservados
+// LETZFLOW - PANEL v3.3.0
 // TABS: Video / Frame / Imagem com estado independente
 // API interception (sem DOM scanning / webRequest)
 // ============================================
 
 let activeTab = "video";
-let licenseInfo = null, autoDownload = true, backgroundMode = true, aiRewrite = true, currentTabId = null;
+let autoDownload = true, backgroundMode = true, aiRewrite = true, currentTabId = null;
 let views = {};
 
 // v3.0.0: sendMessage com retry para evitar "Could not establish connection"
@@ -31,17 +30,17 @@ const _downloadedVideoUrls = new Set();
 const tabState = {
     video: {
         prompts: [], isRunning: false, timerInterval: null, countdownEndTime: null,
-        statePollingTimer: null, detectedMedia: {}, folder: "DottiVideos",
+        statePollingTimer: null, detectedMedia: {}, folder: "LetzVideos",
         mediaIdMap: {}, outputCount: 1
     },
     frame: {
         prompts: [], isRunning: false, timerInterval: null, countdownEndTime: null,
-        statePollingTimer: null, detectedMedia: {}, folder: "DottiFrameVideos",
+        statePollingTimer: null, detectedMedia: {}, folder: "LetzFrameVideos",
         mediaIdMap: {}, frameImages: [] // Array of { dataUrl, name, file } for each selected image
     },
     image: {
         prompts: [], isRunning: false, timerInterval: null, countdownEndTime: null,
-        statePollingTimer: null, detectedMedia: {}, folder: "DottiImagens",
+        statePollingTimer: null, detectedMedia: {}, folder: "LetzImagens",
         mediaIdMap: {}, outputCount: 1
     }
 };
@@ -120,8 +119,8 @@ const tabIds = {
 
 function el(tab, key) { return document.getElementById(tabIds[tab][key]); }
 function getFolder(tab) {
-    if (tab === "frame") return tabState.frame.folder || "DottiFrameVideos";
-    return tabState[tab].folder || (tab === "video" ? "DottiVideos" : "DottiImagens");
+    if (tab === "frame") return tabState.frame.folder || "LetzFrameVideos";
+    return tabState[tab].folder || (tab === "video" ? "LetzVideos" : "LetzImagens");
 }
 
 // v2.1.0: Atualizar log persistente quando media e detectada/baixada
@@ -148,23 +147,19 @@ function buildLocalFilename(tab, prompt) {
 // ============================================
 function initViews() {
     views = {
-        loading: document.getElementById("loadingView"),
-        license: document.getElementById("licenseView"),
         app: document.getElementById("appView")
     };
-
-    // v3.1.0: simultaneousCount removido — batchSize controla tudo (max 10)
 }
 
 async function init() {
     try {
         initViews();
         setupMessageListener();
-        await checkLicense();
+        initApp();
     } catch (e) {
         console.error("[Panel] Init error:", e);
         document.body.innerHTML = '<div style="padding:20px;color:#fff;background:#111;font-family:sans-serif;">' +
-            '<h3 style="color:#FF571C;">Dotti Sender FULL v3.2.5</h3>' +
+            '<h3 style="color:#FF571C;">LetzFlow v3.3.0</h3>' +
             '<p style="color:#888;">Erro ao inicializar. Recarregue a pagina.</p>' +
             '<p style="color:#666;font-size:12px;">' + (e.message || 'Erro desconhecido') + '</p></div>';
     }
@@ -1326,89 +1321,11 @@ async function downloadMedia(tab, idx) {
     updateStatsDisplay(tab);
 }
 
-// ============================================
-// LICENSE
-// ============================================
-async function checkLicense() {
-    showView("loading");
-    try {
-        const r = await safeSendMessage({ action: "GET_STATUS" });
-        if (r && r.hasLicense && r.licenseInfo) {
-            licenseInfo = r.licenseInfo;
-            showView("app");
-            initApp();
-        } else {
-            showView("license");
-            initLicenseForm();
-        }
-    } catch (e) {
-        showView("license");
-        initLicenseForm();
-    }
-}
-
-function showView(name) {
-    Object.values(views).forEach(v => v.classList.add("hidden"));
-    views[name].classList.remove("hidden");
-}
-
-function initLicenseForm() {
-    const input = document.getElementById("licenseInput");
-    const btn = document.getElementById("activateBtn");
-    input.addEventListener("input", (e) => {
-        let val = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-        let formatted = "";
-        for (let i = 0; i < val.length && i < 20; i++) {
-            if (i > 0 && i % 5 === 0) formatted += "-";
-            formatted += val[i];
-        }
-        e.target.value = formatted;
-    });
-    input.addEventListener("keypress", (e) => { if (e.key === "Enter") activateLicense(); });
-    btn.addEventListener("click", activateLicense);
-    input.focus();
-}
-
-async function activateLicense() {
-    const input = document.getElementById("licenseInput");
-    const btn = document.getElementById("activateBtn");
-    const key = input.value.trim();
-    if (!/^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(key)) {
-        showLicenseError("Formato invalido");
-        return;
-    }
-    btn.disabled = true;
-    btn.innerHTML = "Ativando...";
-    document.getElementById("licenseError").classList.add("hidden");
-    try {
-        const r = await safeSendMessage({ action: "ACTIVATE_LICENSE", licenseKey: key });
-        if (r.success) {
-            licenseInfo = r.license;
-            showView("app");
-            initApp();
-        } else {
-            showLicenseError(r.message || r.error || "Erro");
-            btn.disabled = false;
-            btn.textContent = "Ativar Licenca";
-        }
-    } catch (e) {
-        showLicenseError("Erro de conexao");
-        btn.disabled = false;
-        btn.textContent = "Ativar Licenca";
-    }
-}
-
-function showLicenseError(msg) {
-    const e = document.getElementById("licenseError");
-    e.textContent = msg;
-    e.classList.remove("hidden");
-}
 
 // ============================================
 // APP INIT
 // ============================================
 async function initApp() {
-    updateLicenseDisplay();
 
     const tabInfo = await safeSendMessage({ action: "GET_ACTIVE_TAB" });
     currentTabId = tabInfo.tabId;
@@ -1438,14 +1355,14 @@ async function initApp() {
             const bgCheckbox = document.getElementById("backgroundMode");
             if (bgCheckbox) bgCheckbox.checked = backgroundMode;
 
-            el("video", "folder").value = s.videoFolder || "DottiVideos";
-            el("image", "folder").value = s.imageFolder || "DottiImagens";
+            el("video", "folder").value = s.videoFolder || "LetzVideos";
+            el("image", "folder").value = s.imageFolder || "LetzImagens";
             const frameFolder = el("frame", "folder");
-            if (frameFolder) frameFolder.value = s.frameFolder || "DottiFrameVideos";
+            if (frameFolder) frameFolder.value = s.frameFolder || "LetzFrameVideos";
             autoDownload = s.autoDownload;
-            tabState.video.folder = s.videoFolder || "DottiVideos";
-            tabState.image.folder = s.imageFolder || "DottiImagens";
-            tabState.frame.folder = s.frameFolder || "DottiFrameVideos";
+            tabState.video.folder = s.videoFolder || "LetzVideos";
+            tabState.image.folder = s.imageFolder || "LetzImagens";
+            tabState.frame.folder = s.frameFolder || "LetzFrameVideos";
         }
     });
 
@@ -1478,7 +1395,7 @@ async function initApp() {
         if (copyFailedBtn) copyFailedBtn.addEventListener("click", () => copyFailedNumbers(tab));
         if (folderInput) {
             folderInput.addEventListener("change", (e) => {
-                const defaultFolder = tab === "video" ? "DottiVideos" : (tab === "frame" ? "DottiFrameVideos" : "DottiImagens");
+                const defaultFolder = tab === "video" ? "LetzVideos" : (tab === "frame" ? "LetzFrameVideos" : "LetzImagens");
                 tabState[tab].folder = e.target.value.trim() || defaultFolder;
                 saveSettings();
             });
@@ -1505,7 +1422,6 @@ async function initApp() {
         });
     }
     // batchInterval e promptDelay sao fixos (hidden) — sem listener
-    document.getElementById("deactivateBtn").addEventListener("click", deactivateLicense);
 
     // Frame tab: image selection
     const frameFileInput = document.getElementById("frameFileInput");
@@ -1631,8 +1547,7 @@ async function recoverBackgroundState() {
                 el(tab, "progressContainer").classList.remove("hidden");
                 el(tab, "statusCard").classList.remove("hidden");
                 document.getElementById("sharedSettingsCard").classList.add("hidden");
-                document.getElementById("licenseInfoCard").classList.add("hidden");
-
+            
                 displayPrompts(tab);
                 updateStatsDisplay(tab);
 
@@ -1761,21 +1676,6 @@ function saveSettings() {
     }, () => { if (chrome.runtime.lastError) { /* ignore */ } });
 }
 
-function updateLicenseDisplay() {
-    if (licenseInfo) {
-        document.getElementById("licenseKeyDisplay").textContent = licenseInfo.key || "-";
-        const devUsed = licenseInfo.devicesUsed || licenseInfo.devices_used || 0;
-        const devMax = licenseInfo.maxDevices || licenseInfo.max_devices || 2;
-        document.getElementById("devicesDisplay").textContent = devUsed + "/" + devMax;
-        document.getElementById("limitDisplay").textContent = licenseInfo.features?.batch_limit || 1000;
-    }
-}
-
-async function deactivateLicense() {
-    if (!confirm("Desativar licenca?")) return;
-    const r = await safeSendMessage({ action: "DEACTIVATE_LICENSE" });
-    if (r.success) { licenseInfo = null; showView("license"); initLicenseForm(); }
-}
 
 // ============================================
 // UI UPDATES
@@ -1843,11 +1743,6 @@ function processPrompts(tab) {
         st.prompts.sort((a, b) => a.number - b.number);
         if (st.prompts.length === 0) { updateStatus("error", "Nenhum prompt encontrado!"); return; }
 
-        const limit = licenseInfo?.features?.batch_limit || 1000;
-        if (st.prompts.length > limit) {
-            updateStatus("error", "Limite excedido: " + st.prompts.length + " (max: " + limit + ")");
-            return;
-        }
 
         saveSettings();
         displayPrompts(tab);
@@ -1971,24 +1866,6 @@ async function startSending(tab) {
         return;
     }
 
-    // Verificar sessao com o servidor
-    updateStatus("warning", "Verificando sessao...");
-
-    try {
-        const sessionResult = await safeSendMessage({ action: "VERIFY_SESSION_FOR_SENDING" });
-        if (!sessionResult.valid) {
-            console.log("[Panel] startSending BLOCKED: session invalid", sessionResult.error);
-            if (sessionResult.error === "no_license") {
-                updateStatus("error", "Licenca nao encontrada!");
-            } else if (sessionResult.error === "network_error") {
-                updateStatus("error", "Erro de conexao. Verifique sua internet.");
-            } else {
-                updateStatus("error", "Sessao expirada. Reabra a extensao.");
-            }
-            return;
-        }
-    } catch (e) { console.log("[Panel] startSending BLOCKED: session error", e.message); updateStatus("error", "Erro de conexao. Recarregue a pagina."); return; }
-
     try {
         const tabInfo = await safeSendMessage({ action: "GET_ACTIVE_TAB" });
         currentTabId = tabInfo?.tabId;
@@ -2041,7 +1918,6 @@ async function startSending(tab) {
         frDiv.innerHTML = "Pasta de downloads: <span>" + getFolder(tab) + "</span>";
         frDiv.classList.remove("hidden");
     }
-    document.getElementById("licenseInfoCard").classList.add("hidden");
 
     const settings = {
         batchSize: Math.min(parseInt(document.getElementById("batchSize").value) || 10, 10),
@@ -2143,7 +2019,6 @@ async function stopSending(tab) {
     el(tab, "startBtn").onclick = () => continueSending(tab);
     el(tab, "cancelAllBtn").classList.remove("hidden");
     el(tab, "timer").classList.add("hidden");
-    document.getElementById("licenseInfoCard").classList.remove("hidden");
 }
 
 async function emergencyStop(tab) {
@@ -2164,7 +2039,6 @@ async function emergencyStop(tab) {
     el(tab, "stopBtn").classList.add("hidden");
 
     el(tab, "timer").classList.add("hidden");
-    document.getElementById("licenseInfoCard").classList.remove("hidden");
 
     if (st.prompts.length > 0) {
         // v3.2.5: Excluir policy_permanent do reenvio (falha definitiva)
@@ -2205,7 +2079,6 @@ function finishSending(tab) {
     el(tab, "stopBtn").classList.add("hidden");
 
     el(tab, "timer").classList.add("hidden");
-    document.getElementById("licenseInfoCard").classList.remove("hidden");
 
     updateStatsDisplay(tab);
 
@@ -2295,7 +2168,6 @@ function resetAll(tab) {
     el(tab, "progressFill").style.width = "0%";
     el(tab, "progressText").textContent = "0%";
     document.getElementById("sharedSettingsCard").classList.remove("hidden");
-    document.getElementById("licenseInfoCard").classList.remove("hidden");
 
     updateStatsDisplay(tab);
     updateStatus("success", "Pronto! Cole seus prompts para um novo envio");
@@ -2340,7 +2212,6 @@ async function cancelAll(tab) {
     el(tab, "timer").classList.add("hidden");
     el(tab, "promptsInput").value = "";
     document.getElementById("sharedSettingsCard").classList.remove("hidden");
-    document.getElementById("licenseInfoCard").classList.remove("hidden");
 
     if (tab === "image") {
         window.parent.postMessage({ type: "SWITCH_TO_VIDEO_MODE" }, "*");

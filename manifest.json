@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Dotti Sender FULL",
+  "name": "LetzFlow",
   "version": "3.3.0",
   "description": "Disparo automatico de prompts com elementos para Veo 3 — Versao completa com geracao em 2o plano, auto-download e reenvio automatico.",
-  "author": "DottiFlow",
+  "author": "LetzFlow",
 
   "permissions": [
     "activeTab",
@@ -19,8 +19,7 @@
   "host_permissions": [
     "https://labs.google/*",
     "https://*.googleapis.com/*",
-    "https://*.googleusercontent.com/*",
-    "https://dottiflow.com.br/*"
+    "https://*.googleusercontent.com/*"
   ],
 
   "action": {
