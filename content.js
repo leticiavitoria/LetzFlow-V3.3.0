@@ -1,6 +1,5 @@
 // ============================================
-// DOTTI SENDER FULL - CONTENT SCRIPT v3.1.1
-// Copyright (c) DottiFlow - Todos os direitos reservados
+// LETZFLOW - CONTENT SCRIPT v3.3.0
 // EXECUTOR DE DOM (recebe comandos do background)
 // ============================================
 
@@ -1648,7 +1647,7 @@
             }
 
             _maxSimultaneous = Math.min(10, state.maxSimultaneous || 3);
-            _downloadFolder = state.folder || 'DottiVideos';
+            _downloadFolder = state.folder || 'LetzVideos';
             _mediaType = state.mediaType || 'video';
             _autoDownload = state.autoDownload !== false;
 
@@ -1728,7 +1727,7 @@
 
     const _mediaTracker = new Map(); // mediaId -> { prompt, promptNumber, status, operationName }
     let _promptList = [];
-    let _downloadFolder = 'DottiVideos';
+    let _downloadFolder = 'LetzVideos';
     let _mediaType = 'video';
     let _autoDownload = true;
     let _aiRewrite = true; // v3.2.0: Flag para reescrita IA de prompts com policy error
@@ -2207,7 +2206,7 @@
             imageDataUrl: p.imageDataUrl || null,  // v3.4.0: Frame image data URL
             imageName: p.imageName || null          // v3.4.0: Frame image filename
         }));
-        _downloadFolder = folder || 'DottiVideos';
+        _downloadFolder = folder || 'LetzVideos';
         _mediaType = mediaType || 'video';
         _autoDownload = autoDownload !== false;
         _sidebarSwitchedForImage = false; // v3.1.0: Resetar flag sidebar
@@ -4870,7 +4869,7 @@
                         }
 
                         _maxSimultaneous = Math.min(10, state.maxSimultaneous || 3);
-                        _downloadFolder = state.folder || 'DottiVideos';
+                        _downloadFolder = state.folder || 'LetzVideos';
                         _mediaType = state.mediaType || 'video';
                         _autoDownload = state.autoDownload !== false;
 
@@ -5130,7 +5129,7 @@
                 // Receber prompt list do panel para matching no scanner
                 setPromptList(
                     data.prompts,
-                    data.folder || 'DottiVideos',
+                    data.folder || 'LetzVideos',
                     data.mediaType || 'video',
                     data.autoDownload !== false
                 );
